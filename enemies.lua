@@ -7,6 +7,7 @@ enemy_types = {
     spd = 0.5,
     hp = 1,
     score = 5,
+    sfx_death = SFX_ENEMY_DEATH,
     base_col = 11,
     mod_col = nil,
     drop_table = {
@@ -23,6 +24,7 @@ enemy_types = {
     spd = 0.8,
     hp = 2,
     score = 10,
+    sfx_death = SFX_ENEMY_DEATH,
     base_col = 11,
     mod_col = 9,
     drop_table = {
@@ -40,6 +42,7 @@ enemy_types = {
     spd = 1.35,
     hp = 1,
     score = 20,
+    sfx_death = SFX_ENEMY_DEATH,
     base_col = 11,
     mod_col = 10,
     drop_table = {
@@ -57,6 +60,7 @@ enemy_types = {
     spd = 0.25,
     hp = 4,
     score = 20,
+    sfx_death = SFX_ENEMY_DEATH,
     base_col = 11,
     mod_col = 8,
     drop_table = {
@@ -70,7 +74,7 @@ enemy_types = {
 }
 
 wave_defs = {
-  -- [level] = { wave = { { kind = "enemy_kind", weight = n } }, spawn_min = x, spawn_max = y, all_at_once = bool, all_at_once_amount = n }
+  -- [level] = { wave = { { kind = "enemy_kind", weight = n } }, spawn_min = x, spawn_max = y, all_at_once = bool, all_at_once_amount = n, bg_color = c }
   [1] = {
     wave = { { kind = "basic", weight = 1 } },
     spawn_min = 30,
@@ -443,7 +447,12 @@ function enemy_take_damage(enemy, dmg, idx)
   enemy.hp = (enemy.hp or 1) - dmg
   local base_col = enemy.base_col or 12
   enemy.hit_flash = add_hit_flash(8, base_col, 8)
+  sfx(SFX_PLAYER_HIT)
   if enemy.hp <= 0 then
+    local def = enemy_types[enemy.kind]
+    if def and def.sfx_death ~= nil then
+      sfx(def.sfx_death)
+    end
     game_state.score += enemy.score or 0
     enemy_drop(enemy)
     if idx then

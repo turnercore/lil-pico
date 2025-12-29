@@ -1,5 +1,3 @@
--- constants
-MARGIN_BOTTOM = 5
 local screen_w, screen_h = 128, 128 - UI_HEIGHT - MARGIN_BOTTOM
 level_score_req = {
     -- [current_level] = score_needed_for_next_level
@@ -23,7 +21,7 @@ level_score_req = {
 function _init()
     init_game_state()
     init_app_state()
-    start_bgm(0)
+    start_bgm(MUSIC_BGM_MAIN)
 end
 
 function _update()

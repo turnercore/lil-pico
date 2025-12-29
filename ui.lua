@@ -61,9 +61,26 @@ function ui_draw_main_menu()
 end
 
 function ui_draw_upgrades()
-  ui_print_centered("upgrades", 24, 7)
-  ui_print_centered("(wip)", 36, 6)
-  ui_print_centered("X/O: resume", 56, 6)
+  local panel_y = 16
+  rectfill(8, panel_y, 119, 88, 1)
+  rect(8, panel_y, 119, 88, 7)
+  ui_print_centered("choose upgrade", panel_y + 4, 7)
+
+  local choices = game_state.upgrade_choices or {}
+  local idx = game_state.upgrade_index or 1
+  for i = 1, #choices do
+    local u = choices[i]
+    local y = panel_y + 16 + (i - 1) * 18
+    local is_sel = (i == idx)
+    local col = is_sel and 10 or 6
+    local title = u and u.title or "?"
+    local desc = u and u.desc or ""
+    rectfill(14, y - 2, 113, y + 14, is_sel and 3 or 0)
+    print(title, 18, y, col)
+    print(desc, 18, y + 8, 6)
+  end
+
+  ui_print_centered("up/down + X", 94, 6)
 end
 
 function ui_draw_game_over()

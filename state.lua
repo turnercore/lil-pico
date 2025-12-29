@@ -6,6 +6,7 @@ function init_game_state()
     game_over = false,
     paused = false,
     pause_t = 0,
+    bg_color = 0,
     toast = "",
     toast_t = 0,
     hit_flashes = {},
@@ -24,14 +25,19 @@ function init_game_state()
     shoot_combo_prev = false,
 
     current_wave = {},
+    upgrade_choices = {},
+    upgrade_index = 1,
+    upgrade_confirm_ready = false,
 
     player = {
       cfg = {
         hp_max = 3,
+        move_speed = 1,
         dodge_t = 6,
         dodge_cd = 60,
         dodge_invuln_t = 12,
         dodge_speed = 4,
+        damage = 1,
         projectile_speed = 3,
         shoot_cd_max = 8,
         projectile_spread = 10
@@ -75,6 +81,7 @@ function init_game_state()
 
   game_state.player.hp = game_state.player.cfg.hp_max or 3
   set_level(game_state.level, true)
+  init_upgrades()
 end
 
 -- temporary gameplay pause (eg hit-stop)
@@ -136,13 +143,12 @@ function set_app_state(next_state)
       init_game_state()
       game_state.toast = ""
       game_state.toast_t = 0
-      start_bgm(0)
     elseif prev == GS_GAME_OVER then
       reset_game_state()
-      start_bgm(0)
     end
   elseif next_state == GS_UPGRADES then
     game_state.game_over = true
+    game_state.upgrade_confirm_ready = false
   elseif next_state == GS_GAME_OVER then
     game_state.game_over = true
     game_state.player.dead = true
@@ -164,10 +170,7 @@ function update_app_state()
   end
 
   if app_state == GS_UPGRADES then
-    -- placeholder upgrades screen: back/resume
-    if btnp(4) or btnp(5) then
-      set_app_state(GS_GAMEPLAY)
-    end
+    update_upgrade_input()
     return
   end
 
@@ -204,7 +207,7 @@ function update_app_state()
 end
 
 function draw_app_state()
-  cls(3)
+  cls(game_state.bg_color or 0)
 
   if app_state == GS_MENU then
     ui_draw_main_menu()
@@ -264,6 +267,7 @@ function set_level(level_num, silent)
     game_state.current_wave = wave
     game_state.spawn_min = wave_def.spawn_min
     game_state.spawn_max = wave_def.spawn_max
+    game_state.bg_color = wave_def.bg_color or 0
     game_state.enemy_spawn_t = 0
     if wave_def.all_at_once and (wave_def.all_at_once_amount or 0) > 0 then
       game_state.spawn_enabled = false
@@ -274,8 +278,106 @@ function set_level(level_num, silent)
   else
     game_state.spawn_min = nil
     game_state.spawn_max = nil
+    game_state.bg_color = 0
     game_state.spawn_enabled = true
   end
 
   return true
+end
+
+function init_upgrades()
+  upgrade_defs = {
+    { id = "hp", title = "+hp", desc = "hp max +1, heal 1", apply = apply_upgrade_hp },
+    { id = "speed", title = "+speed", desc = "move a bit faster", apply = apply_upgrade_speed },
+    { id = "damage", title = "+damage", desc = "projectiles +1 dmg", apply = apply_upgrade_damage },
+    { id = "proj_speed", title = "+proj speed", desc = "shots fly faster", apply = apply_upgrade_proj_speed },
+    { id = "fire_rate", title = "+fire rate", desc = "shoot cooldown down", apply = apply_upgrade_fire_rate }
+  }
+end
+
+function roll_upgrades()
+  game_state.upgrade_choices = {}
+  game_state.upgrade_index = 1
+
+  local used = {}
+  local n = min(3, #upgrade_defs)
+  for i = 1, n do
+    local pick = nil
+    local tries = 0
+    while not pick and tries < 20 do
+      local idx = flr(rnd(#upgrade_defs)) + 1
+      local def = upgrade_defs[idx]
+      if def and not used[def.id] then
+        used[def.id] = true
+        pick = def
+      end
+      tries += 1
+    end
+    if pick then
+      add(game_state.upgrade_choices, pick)
+    end
+  end
+end
+
+function update_upgrade_input()
+  if #game_state.upgrade_choices == 0 then
+    roll_upgrades()
+  end
+
+  if not game_state.upgrade_confirm_ready then
+    if not btn(4) and not btn(5) then
+      game_state.upgrade_confirm_ready = true
+    else
+      return
+    end
+  end
+
+  if btnp(2) then
+    game_state.upgrade_index -= 1
+    if game_state.upgrade_index < 1 then
+      game_state.upgrade_index = #game_state.upgrade_choices
+    end
+    sfx(SFX_SHOOT)
+  elseif btnp(3) then
+    game_state.upgrade_index += 1
+    if game_state.upgrade_index > #game_state.upgrade_choices then
+      game_state.upgrade_index = 1
+    end
+    sfx(SFX_SHOOT)
+  elseif btnp(5) then
+    local pick = game_state.upgrade_choices[game_state.upgrade_index]
+    if pick and pick.apply then
+      pick.apply()
+    end
+    sfx(SFX_UPGRADE_PICK)
+    game_state.upgrade_choices = {}
+    game_state.upgrade_index = 1
+    set_app_state(GS_GAMEPLAY)
+  end
+end
+
+function apply_upgrade_hp()
+  local cfg = game_state.player.cfg
+  cfg.hp_max = (cfg.hp_max or 3) + 1
+  game_state.player.hp = min(cfg.hp_max, (game_state.player.hp or 0) + 1)
+end
+
+function apply_upgrade_speed()
+  local cfg = game_state.player.cfg
+  cfg.move_speed = (cfg.move_speed or 1) + 0.2
+end
+
+function apply_upgrade_damage()
+  local cfg = game_state.player.cfg
+  cfg.damage = (cfg.damage or 1) + 1
+end
+
+function apply_upgrade_proj_speed()
+  local cfg = game_state.player.cfg
+  cfg.projectile_speed = (cfg.projectile_speed or 3) + 0.5
+end
+
+function apply_upgrade_fire_rate()
+  local cfg = game_state.player.cfg
+  cfg.shoot_cd_max = max(2, (cfg.shoot_cd_max or 8) - 1)
 end

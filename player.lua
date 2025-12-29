@@ -73,6 +73,7 @@ function player_shoot()
   end
 
   spawn_projectile(x, y, game_state.player.dir, vx, vy)
+  sfx(SFX_SHOOT)
 end
 
 function player_dodge()
@@ -134,6 +135,8 @@ function player_dodge()
   game_state.player.dodge_t = cfg.dodge_t or 10
   game_state.player.invuln_t = cfg.dodge_invuln_t or 15
   game_state.player.dodge_cd = cfg.dodge_cd or 30
+
+  sfx(SFX_PLAYER_DODGE)
 end
 
 function player_hit(dmg, hit_invuln_t)
@@ -148,8 +151,10 @@ function player_hit(dmg, hit_invuln_t)
   game_state.toast_t = 30
   pause_game(6)
   game_state.player.invuln_t = hit_invuln_t or 20
+  sfx(SFX_PLAYER_HIT)
 
   if game_state.player.hp <= 0 then
+    sfx(SFX_PLAYER_DEATH)
     set_game_over()
   end
 
@@ -192,7 +197,8 @@ function update_player_position()
   -- down
 
   local moved = (ix ~= 0) or (iy ~= 0)
-  local speed = 1
+  local cfg = game_state.player.cfg or {}
+  local speed = cfg.move_speed or 1
 
   -- prevent diagonal movement being faster than cardinal movement
   local dx, dy = ix, iy
@@ -240,7 +246,8 @@ function spawn_projectile(x, y, dir, vx, vy)
     end
   end
 
-  local p = { x = x, y = y, vx = vx, vy = vy, r = 1 }
+  local cfg = game_state.player.cfg or {}
+  local p = { x = x, y = y, vx = vx, vy = vy, r = 1, dmg = cfg.damage or 1 }
   add(game_state.projectiles, p)
 end
 
@@ -273,7 +280,8 @@ function update_projectiles()
         local sx = ox + (p.vx * t)
         local sy = oy + (p.vy * t)
         if point_in_rect(sx, sy, rx, ry, rw, rh) then
-          if enemy_take_damage(e, 1, j) then
+          local dmg = p.dmg or 1
+          if enemy_take_damage(e, dmg, j) then
             deli(game_state.projectiles, i)
             hit = true
           end
