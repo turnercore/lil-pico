@@ -81,6 +81,9 @@ function init_game_state()
   }
 
   game_state.player.hp = game_state.player.cfg.hp_max or 3
+  local screen_h = 128 - UI_HEIGHT - MARGIN_BOTTOM
+  game_state.player.position.x = flr((128 - 8) / 2)
+  game_state.player.position.y = flr((screen_h - 8) / 2)
   game_state.level_score_start = game_state.score or 0
   set_level(game_state.level, true)
   init_upgrades()
