@@ -1,3 +1,6 @@
+-- sound effect constants
+SFX_ENEMY_DEATH = 57
+
 -- enemy config: stats, sprites, drops
 enemy_types = {
   basic = {
@@ -351,6 +354,9 @@ function update_pickups()
             game_state.score += def.score
             game_state.toast = "+" .. def.score
             game_state.toast_t = 30
+          end
+          if def.sfx ~= nil then
+            sfx(def.sfx)
           end
           deli(game_state.pickups, i)
         end

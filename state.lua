@@ -2,6 +2,7 @@ function init_game_state()
   game_state = {
     score = 0,
     level = 1,
+    level_score_start = 0,
 
     game_over = false,
     paused = false,
@@ -80,6 +81,7 @@ function init_game_state()
   }
 
   game_state.player.hp = game_state.player.cfg.hp_max or 3
+  game_state.level_score_start = game_state.score or 0
   set_level(game_state.level, true)
   init_upgrades()
 end
@@ -256,6 +258,7 @@ end
 
 function set_level(level_num, silent)
   game_state.level = level_num
+  game_state.level_score_start = game_state.score or 0
   if not silent then
     game_state.toast = "level " .. game_state.level
     game_state.toast_t = 30

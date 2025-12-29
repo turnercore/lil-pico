@@ -13,7 +13,7 @@ end
 
 function draw_score()
   -- Example logic to draw the score
-  print("Score: " .. game_state.score, 1, 128 - UI_HEIGHT + 1, 7)
+  print("Score: " .. game_state.score, 1, 128 - UI_HEIGHT + 2, 7)
 end
 
 function draw_level()
@@ -23,18 +23,56 @@ end
 
 function draw_health()
   local hp_max = (game_state.player.cfg and game_state.player.cfg.hp_max) or 3
-  print("HP: " .. game_state.player.hp .. "/" .. hp_max, 60, 128 - UI_HEIGHT + 1, 7)
+  local hp = game_state.player.hp or 0
+  local x = 60
+  local y = 128 - UI_HEIGHT + 2
+  local size = 4
+  local gap = 2
+  local max_hp = max(0, hp_max)
+  for i = 1, max_hp do
+    local sx = x + (i - 1) * (size + gap)
+    rect(sx, y, sx + size, y + size, 7)
+    if i <= hp then
+      rectfill(sx + 1, y + 1, sx + size - 1, y + size - 1, 8)
+    end
+  end
 end
 
 function draw_ui()
   -- draw bottom UI bar
   rectfill(0, 128 - UI_HEIGHT, 127, 127, UI_COLOR)
+  draw_level_progress()
   draw_score()
   draw_health()
   draw_level()
 
   -- draw toast messages, if any
   draw_toast()
+end
+
+function draw_level_progress()
+  local lvl = game_state.level or 1
+  local need = level_score_req and level_score_req[lvl] or nil
+  if not need or need <= 0 then
+    return
+  end
+
+  local start = game_state.level_score_start or 0
+  local cur = game_state.score or 0
+  local denom = need - start
+  if denom <= 0 then
+    return
+  end
+
+  local t = (cur - start) / denom
+  if t < 0 then t = 0 end
+  if t > 1 then t = 1 end
+
+  local y = 128 - UI_HEIGHT
+  local w = flr(128 * t)
+  if w > 0 then
+    rectfill(0, y, w - 1, y, 11)
+  end
 end
 
 function draw_toast()
