@@ -1,6 +1,24 @@
 -- constants
 MARGIN_BOTTOM = 5
 local screen_w, screen_h = 128, 128 - UI_HEIGHT - MARGIN_BOTTOM
+level_score_req = {
+    -- [current_level] = score_needed_for_next_level
+    [1] = 40,
+    [2] = 125,
+    [3] = 175,
+    [4] = 350,
+    [5] = 500,
+    [6] = 800,
+    [7] = 1200,
+    [8] = 1700,
+    [9] = 2300,
+    [10] = 3000,
+    [11] = 4000,
+    [12] = 5500,
+    [13] = 7500,
+    [14] = 10000,
+    [15] = 13000
+}
 
 function _init()
     init_game_state()
@@ -18,6 +36,51 @@ end
 
 function start_bgm(music_id)
     music(music_id)
+end
+
+-- hit flash helpers
+function add_hit_flash(frames, base_col, flash_col)
+    local t = frames or 0
+    if t <= 0 then
+        return nil
+    end
+    local flash = { t = t, base_col = base_col, flash_col = flash_col }
+    add(game_state.hit_flashes, flash)
+    return flash
+end
+
+function update_hit_flashes()
+    for i = #game_state.hit_flashes, 1, -1 do
+        local f = game_state.hit_flashes[i]
+        f.t -= 1
+        if f.t <= 0 then
+            deli(game_state.hit_flashes, i)
+        end
+    end
+end
+
+-- draw a sprite with a brief hit-flash palette swap
+function draw_sprite_hit_effect(spr_id, x, y, flash, base_col, mod_col, w, h, flipx, flipy)
+    w = w or 1
+    h = h or 1
+    local use_base = base_col or (flash and flash.base_col)
+    if flash and flash.t > 0 and (flash.t % 4) < 2 then
+        if use_base and flash.flash_col then
+            pal(use_base, flash.flash_col)
+        end
+        spr(spr_id, x, y, w, h, flipx, flipy)
+        pal()
+        return
+    end
+
+    if mod_col and use_base and mod_col ~= use_base then
+        pal(use_base, mod_col)
+        spr(spr_id, x, y, w, h, flipx, flipy)
+        pal()
+        return
+    end
+
+    spr(spr_id, x, y, w, h, flipx, flipy)
 end
 
 function wrap_xy(x, y, w, h)
@@ -41,11 +104,9 @@ end
 
 function check_level_progression()
     local lvl = game_state.level or 1
-    local need = flr(20 + (lvl * lvl) * 5)
-    if game_state.score >= need then
-        game_state.level = lvl + 1
-        game_state.toast = "level " .. game_state.level
-        game_state.toast_t = 30
+    local need = level_score_req[lvl]
+    if need and game_state.score >= need then
+        set_level(lvl + 1)
         return true
     end
     return false

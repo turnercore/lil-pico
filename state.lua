@@ -8,16 +8,22 @@ function init_game_state()
     pause_t = 0,
     toast = "",
     toast_t = 0,
+    hit_flashes = {},
 
     projectiles = {},
     pickups = {},
     enemies = {},
     enemy_spawn_t = 30,
+    spawn_min = nil,
+    spawn_max = nil,
+    spawn_enabled = true,
 
     shoot_repeat = false,
     shoot_cd = 0,
     shoot_btn_prev = false,
     shoot_combo_prev = false,
+
+    current_wave = {},
 
     player = {
       cfg = {
@@ -62,11 +68,13 @@ function init_game_state()
       dodge_cd = 0,
       dodge_vx = 0,
       dodge_vy = 0,
-      invuln_t = 0
+      invuln_t = 0,
+      hit_flash = nil
     }
   }
 
   game_state.player.hp = game_state.player.cfg.hp_max or 3
+  set_level(game_state.level, true)
 end
 
 -- temporary gameplay pause (eg hit-stop)
@@ -178,6 +186,7 @@ function update_app_state()
     update_pause()
     return
   end
+  update_hit_flashes()
   update_player_position()
   update_player_animation()
   update_player_actions()
@@ -195,7 +204,7 @@ function update_app_state()
 end
 
 function draw_app_state()
-  cls()
+  cls(3)
 
   if app_state == GS_MENU then
     ui_draw_main_menu()
@@ -240,4 +249,33 @@ function set_game_over()
     return
   end
   set_app_state(GS_GAME_OVER)
+end
+
+function set_level(level_num, silent)
+  game_state.level = level_num
+  if not silent then
+    game_state.toast = "level " .. game_state.level
+    game_state.toast_t = 30
+  end
+
+  local wave_def = wave_defs and wave_defs[level_num]
+  if wave_def then
+    local wave = wave_def.wave or wave_def
+    game_state.current_wave = wave
+    game_state.spawn_min = wave_def.spawn_min
+    game_state.spawn_max = wave_def.spawn_max
+    game_state.enemy_spawn_t = 0
+    if wave_def.all_at_once and (wave_def.all_at_once_amount or 0) > 0 then
+      game_state.spawn_enabled = false
+      spawn_enemy_ring(wave_def.all_at_once_amount)
+    else
+      game_state.spawn_enabled = true
+    end
+  else
+    game_state.spawn_min = nil
+    game_state.spawn_max = nil
+    game_state.spawn_enabled = true
+  end
+
+  return true
 end

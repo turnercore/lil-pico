@@ -143,10 +143,11 @@ function player_hit(dmg, hit_invuln_t)
 
   dmg = dmg or 1
   game_state.player.hp -= dmg
-  game_state.player.invuln_t = hit_invuln_t or 20
+  game_state.player.hit_flash = add_hit_flash(8, 5, 8)
   game_state.toast = "ouch! hp: " .. game_state.player.hp
   game_state.toast_t = 30
   pause_game(6)
+  game_state.player.invuln_t = hit_invuln_t or 20
 
   if game_state.player.hp <= 0 then
     set_game_over()
@@ -272,13 +273,9 @@ function update_projectiles()
         local sx = ox + (p.vx * t)
         local sy = oy + (p.vy * t)
         if point_in_rect(sx, sy, rx, ry, rw, rh) then
-          e.hp = (e.hp or 1) - 1
-          deli(game_state.projectiles, i)
-          hit = true
-          if e.hp <= 0 then
-            enemy_drop(e)
-            game_state.score += (e.score or 0)
-            deli(game_state.enemies, j)
+          if enemy_take_damage(e, 1, j) then
+            deli(game_state.projectiles, i)
+            hit = true
           end
           break
         end
@@ -316,10 +313,6 @@ function draw_player()
     return
   end
 
-  if game_state.player.invuln_t > 0 and (game_state.player.invuln_t % 4) < 2 then
-    return
-  end
-
   local frames, i
   if game_state.player.moving then
     frames = game_state.player.anim[game_state.player.dir]
@@ -332,7 +325,7 @@ function draw_player()
   local sprite_id = frames and frames[i] or 1
   local px = flr(game_state.player.position.x + 0.5)
   local py = flr(game_state.player.position.y + 0.5)
-  spr(sprite_id, px, py)
+  draw_sprite_hit_effect(sprite_id, px, py, game_state.player.hit_flash)
 end
 
 function update_player_animation()

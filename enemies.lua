@@ -4,15 +4,115 @@ enemy_types = {
     spr = { 16, 17 },
     w = 8,
     h = 8,
-    spd = 0.6,
+    spd = 0.5,
     hp = 1,
-    score = 10,
+    score = 5,
+    base_col = 11,
+    mod_col = nil,
     drop_table = {
       { min = 90, max = 100, key = "hp" }
     },
     anim_rate = 8,
     dmg = 1,
     hit_invuln_t = 20
+  },
+  basic_better = {
+    spr = { 16, 17 },
+    w = 8,
+    h = 8,
+    spd = 0.8,
+    hp = 2,
+    score = 10,
+    base_col = 11,
+    mod_col = 9,
+    drop_table = {
+      { min = 80, max = 100, key = "hp" },
+      { min = 1, max = 5, key = "coin" }
+    },
+    anim_rate = 6,
+    dmg = 1,
+    hit_invuln_t = 20
+  },
+  basic_fast = {
+    spr = { 16, 17 },
+    w = 8,
+    h = 8,
+    spd = 1.35,
+    hp = 1,
+    score = 20,
+    base_col = 11,
+    mod_col = 10,
+    drop_table = {
+      { min = 85, max = 100, key = "hp" },
+      { min = 1, max = 15, key = "coin" }
+    },
+    anim_rate = 4,
+    dmg = 1,
+    hit_invuln_t = 10
+  },
+  basic_fatty = {
+    spr = { 16, 17 },
+    w = 12,
+    h = 12,
+    spd = 0.25,
+    hp = 4,
+    score = 20,
+    base_col = 11,
+    mod_col = 8,
+    drop_table = {
+      { min = 70, max = 100, key = "hp" },
+      { min = 1, max = 25, key = "coin" }
+    },
+    anim_rate = 14,
+    dmg = 2,
+    hit_invuln_t = 30
+  }
+}
+
+wave_defs = {
+  -- [level] = { wave = { { kind = "enemy_kind", weight = n } }, spawn_min = x, spawn_max = y, all_at_once = bool, all_at_once_amount = n }
+  [1] = {
+    wave = { { kind = "basic", weight = 1 } },
+    spawn_min = 30,
+    spawn_max = 90
+  },
+  [2] = {
+    wave = {
+      { kind = "basic", weight = 100 },
+      { kind = "basic_better", weight = 10 }
+    },
+    spawn_min = 30,
+    spawn_max = 85,
+    all_at_once = true,
+    all_at_once_amount = 10
+  },
+  [3] = {
+    wave = {
+      { kind = "basic", weight = 100 },
+      { kind = "basic_better", weight = 20 },
+      { kind = "basic_fast", weight = 5 }
+    },
+    spawn_min = 30,
+    spawn_max = 80
+  },
+  [4] = {
+    wave = {
+      { kind = "basic", weight = 100 },
+      { kind = "basic_better", weight = 20 },
+      { kind = "basic_fast", weight = 10 }
+    },
+    spawn_min = 20,
+    spawn_max = 70
+  },
+  [5] = {
+    wave = {
+      { kind = "basic", weight = 100 },
+      { kind = "basic_better", weight = 30 },
+      { kind = "basic_fast", weight = 15 },
+      { kind = "basic_fatty", weight = 10 }
+    },
+    spawn_min = 25,
+    spawn_max = 76
   }
 }
 
@@ -29,13 +129,24 @@ pickup_defs = {
     frames = { 64, 65 },
     anim_rate = 8,
     heal = 1,
-    t = 80
+    score = 25,
+    t = 120
+  },
+  coin = {
+    frames = { 66, 67, 68, 69 },
+    anim_rate = 6,
+    t = 360,
+    score = 100
   }
 }
 
 -- create a new enemy just offscreen and add to the list
-function spawn_enemy(kind)
-  kind = kind or "basic"
+function spawn_enemy(kind_override)
+  -- get a random enemy kind for the current level
+  local wave_kind = pick_wave_kind(game_state.current_wave)
+
+  kind = kind_override or wave_kind or "basic"
+
   local def = enemy_types[kind] or enemy_types.basic
 
   local w = 128
@@ -69,9 +180,95 @@ function spawn_enemy(kind)
     spd = def.spd,
     hp = def.hp,
     score = def.score or 0,
-    drop_table = def.drop_table
+    drop_table = def.drop_table,
+    base_col = def.base_col,
+    mod_col = def.mod_col,
+    hit_flash = nil
   }
   add(game_state.enemies, e)
+end
+
+function pick_wave_kind(wave_options)
+  if not wave_options or #wave_options == 0 then
+    return nil
+  end
+
+  local total = 0
+  for opt in all(wave_options) do
+    if type(opt) == "table" then
+      total += (opt.weight or 1)
+    else
+      total += 1
+    end
+  end
+
+  if total <= 0 then
+    return wave_options[1]
+  end
+
+  local roll = rnd(total)
+  local acc = 0
+  for opt in all(wave_options) do
+    local w = 1
+    local kind = opt
+    if type(opt) == "table" then
+      w = opt.weight or 1
+      kind = opt.kind
+    end
+    acc += w
+    if roll < acc then
+      return kind
+    end
+  end
+
+  local last = wave_options[#wave_options]
+  if type(last) == "table" then
+    return last.kind
+  end
+  return last
+end
+
+function spawn_enemy_ring(count)
+  count = count or 0
+  if count <= 0 then
+    return
+  end
+  local cx = 64
+  local cy = (128 - UI_HEIGHT - MARGIN_BOTTOM) / 2
+  local r = 84
+  local offset = rnd(1) * 6.2831853
+  for i = 1, count do
+    local theta = offset + ((i - 1) / count) * 6.2831853
+    local x = cx + cos(theta) * r
+    local y = cy + sin(theta) * r
+    local w = 128
+    local h = 128 - UI_HEIGHT - MARGIN_BOTTOM
+    if x < -8 then x = -8 end
+    if x > w + 8 then x = w + 8 end
+    if y < -8 then y = -8 end
+    if y > h + 8 then y = h + 8 end
+
+    local kind = pick_wave_kind(game_state.current_wave) or "basic"
+    local def = enemy_types[kind] or enemy_types.basic
+    local e = {
+      x = x,
+      y = y,
+      kind = kind,
+      spr = def.spr,
+      anim_i = 1,
+      anim_t = 0,
+      w = def.w,
+      h = def.h,
+      spd = def.spd,
+      hp = def.hp,
+      score = def.score or 0,
+      drop_table = def.drop_table,
+      base_col = def.base_col,
+      mod_col = def.mod_col,
+      hit_flash = nil
+    }
+    add(game_state.enemies, e)
+  end
 end
 
 -- roll a drop table and return a pickup key or nil
@@ -131,8 +328,21 @@ function update_pickups()
           if p.key == "hp" then
             local heal = def.heal or 1
             local hp_max = (game_state.player.cfg and game_state.player.cfg.hp_max) or 3
-            game_state.player.hp = min(hp_max, game_state.player.hp + heal)
-            game_state.toast = "hp +" .. heal
+            if game_state.player.hp >= hp_max then
+              local score = def.score or 0
+              if score > 0 then
+                game_state.score += score
+                game_state.toast = "+" .. score
+                game_state.toast_t = 30
+              end
+            else
+              game_state.player.hp = min(hp_max, game_state.player.hp + heal)
+              game_state.toast = "hp +" .. heal
+              game_state.toast_t = 30
+            end
+          elseif def.score and def.score > 0 then
+            game_state.score += def.score
+            game_state.toast = "+" .. def.score
             game_state.toast_t = 30
           end
           deli(game_state.pickups, i)
@@ -162,16 +372,24 @@ function update_enemies()
     return
   end
 
-  -- spawn timer scales with level
-  local lvl = game_state.level or 1
-  local min_t = max(10, enemy_spawner.spawn_min - (lvl - 1) * 2)
-  local max_t = max(min_t, enemy_spawner.spawn_max - (lvl - 1) * 4)
+  if game_state.spawn_enabled == false and #game_state.enemies == 0 then
+    game_state.spawn_enabled = true
+    game_state.enemy_spawn_t = 0
+  end
 
-  if game_state.enemy_spawn_t > 0 then
-    game_state.enemy_spawn_t -= 1
-  else
-    spawn_enemy()
-    game_state.enemy_spawn_t = flr(rnd(max_t - min_t + 1)) + min_t
+  -- spawn timer uses level def values when set
+  local base_min = game_state.spawn_min or enemy_spawner.spawn_min
+  local base_max = game_state.spawn_max or enemy_spawner.spawn_max
+  local min_t = max(1, base_min)
+  local max_t = max(min_t, base_max)
+
+  if game_state.spawn_enabled ~= false then
+    if game_state.enemy_spawn_t > 0 then
+      game_state.enemy_spawn_t -= 1
+    else
+      spawn_enemy()
+      game_state.enemy_spawn_t = flr(rnd(max_t - min_t + 1)) + min_t
+    end
   end
 
   -- chase the player center
@@ -216,6 +434,33 @@ function update_enemies()
   end
 end
 
+function enemy_take_damage(enemy, dmg, idx)
+  if not enemy then
+    return false
+  end
+
+  dmg = dmg or 1
+  enemy.hp = (enemy.hp or 1) - dmg
+  local base_col = enemy.base_col or 12
+  enemy.hit_flash = add_hit_flash(8, base_col, 8)
+  if enemy.hp <= 0 then
+    game_state.score += enemy.score or 0
+    enemy_drop(enemy)
+    if idx then
+      deli(game_state.enemies, idx)
+    else
+      for i = #game_state.enemies, 1, -1 do
+        if game_state.enemies[i] == enemy then
+          deli(game_state.enemies, i)
+          break
+        end
+      end
+    end
+    return true
+  end
+  return true
+end
+
 -- draw enemies
 function draw_enemies()
   for e in all(game_state.enemies) do
@@ -224,6 +469,7 @@ function draw_enemies()
     if type(frames) == "table" then
       spr_id = frames[e.anim_i] or frames[1]
     end
-    spr(spr_id, flr(e.x + 0.5), flr(e.y + 0.5))
+    local base_col = e.base_col or 12
+    draw_sprite_hit_effect(spr_id, flr(e.x + 0.5), flr(e.y + 0.5), e.hit_flash, base_col, e.mod_col)
   end
 end
