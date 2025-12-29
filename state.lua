@@ -267,7 +267,11 @@ function set_level(level_num, silent)
     game_state.current_wave = wave
     game_state.spawn_min = wave_def.spawn_min
     game_state.spawn_max = wave_def.spawn_max
-    game_state.bg_color = wave_def.bg_color or 0
+    if wave_def.bg_color ~= nil then
+      game_state.bg_color = wave_def.bg_color
+    elseif wave_def.wave_bg_color ~= nil then
+      game_state.bg_color = wave_def.wave_bg_color
+    end
     game_state.enemy_spawn_t = 0
     if wave_def.all_at_once and (wave_def.all_at_once_amount or 0) > 0 then
       game_state.spawn_enabled = false
@@ -278,7 +282,6 @@ function set_level(level_num, silent)
   else
     game_state.spawn_min = nil
     game_state.spawn_max = nil
-    game_state.bg_color = 0
     game_state.spawn_enabled = true
   end
 
@@ -287,11 +290,11 @@ end
 
 function init_upgrades()
   upgrade_defs = {
-    { id = "hp", title = "+hp", desc = "hp max +1, heal 1", apply = apply_upgrade_hp },
-    { id = "speed", title = "+speed", desc = "move a bit faster", apply = apply_upgrade_speed },
-    { id = "damage", title = "+damage", desc = "projectiles +1 dmg", apply = apply_upgrade_damage },
-    { id = "proj_speed", title = "+proj speed", desc = "shots fly faster", apply = apply_upgrade_proj_speed },
-    { id = "fire_rate", title = "+fire rate", desc = "shoot cooldown down", apply = apply_upgrade_fire_rate }
+    { id = "hp", title = "+hp", desc = "hp max +1, heal 1", apply = apply_upgrade_hp, sfx = SFX_UPGRADE_PICK },
+    { id = "speed", title = "+speed", desc = "move a bit faster", apply = apply_upgrade_speed, sfx = SFX_UPGRADE_PICK },
+    { id = "damage", title = "+damage", desc = "projectiles +1 dmg", apply = apply_upgrade_damage, sfx = SFX_UPGRADE_PICK },
+    { id = "proj_speed", title = "+proj speed", desc = "shots fly faster", apply = apply_upgrade_proj_speed, sfx = SFX_UPGRADE_PICK },
+    { id = "fire_rate", title = "+fire rate", desc = "shoot cooldown down", apply = apply_upgrade_fire_rate, sfx = SFX_UPGRADE_PICK }
   }
 end
 
@@ -346,10 +349,18 @@ function update_upgrade_input()
     sfx(SFX_SHOOT)
   elseif btnp(5) then
     local pick = game_state.upgrade_choices[game_state.upgrade_index]
-    if pick and pick.apply then
-      pick.apply()
+    if pick then
+      if pick.apply then
+        pick.apply()
+      end
+      local sfx_id = pick.sfx
+      if sfx_id == nil then
+        sfx_id = SFX_UPGRADE_PICK
+      end
+      if sfx_id ~= nil then
+        sfx(sfx_id)
+      end
     end
-    sfx(SFX_UPGRADE_PICK)
     game_state.upgrade_choices = {}
     game_state.upgrade_index = 1
     set_app_state(GS_GAMEPLAY)

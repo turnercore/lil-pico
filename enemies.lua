@@ -78,7 +78,8 @@ wave_defs = {
   [1] = {
     wave = { { kind = "basic", weight = 1 } },
     spawn_min = 30,
-    spawn_max = 90
+    spawn_max = 90,
+    bg_color = 3
   },
   [2] = {
     wave = {
@@ -134,13 +135,15 @@ pickup_defs = {
     anim_rate = 8,
     heal = 1,
     score = 25,
-    t = 120
+    t = 120,
+    sfx = SFX_PICKUP_HEALTH
   },
   coin = {
     frames = { 66, 67, 68, 69 },
     anim_rate = 6,
     t = 360,
-    score = 100
+    score = 100,
+    sfx = SFX_PICKUP_COIN
   }
 }
 
