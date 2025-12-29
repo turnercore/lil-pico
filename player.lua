@@ -136,6 +136,25 @@ function player_dodge()
   game_state.player.dodge_cd = cfg.dodge_cd or 30
 end
 
+function player_hit(dmg, hit_invuln_t)
+  if game_state.player.dead or game_state.player.invuln_t > 0 then
+    return false
+  end
+
+  dmg = dmg or 1
+  game_state.player.hp -= dmg
+  game_state.player.invuln_t = hit_invuln_t or 20
+  game_state.toast = "ouch! hp: " .. game_state.player.hp
+  game_state.toast_t = 30
+  pause_game(6)
+
+  if game_state.player.hp <= 0 then
+    set_game_over()
+  end
+
+  return true
+end
+
 function update_player_position()
   -- Example logic to update player position
   local ix, iy = 0, 0

@@ -1,3 +1,4 @@
+-- enemy config: stats, sprites, drops
 enemy_types = {
   basic = {
     spr = { 16, 17 },
@@ -15,12 +16,14 @@ enemy_types = {
   }
 }
 
+-- spawn timing and bounds
 enemy_spawner = {
   spawn_min = 30,
   spawn_max = 90,
   spawn_margin = 8
 }
 
+-- pickup definitions dropped by enemies
 pickup_defs = {
   hp = {
     frames = { 64, 65 },
@@ -30,6 +33,7 @@ pickup_defs = {
   }
 }
 
+-- create a new enemy just offscreen and add to the list
 function spawn_enemy(kind)
   kind = kind or "basic"
   local def = enemy_types[kind] or enemy_types.basic
@@ -70,6 +74,7 @@ function spawn_enemy(kind)
   add(game_state.enemies, e)
 end
 
+-- roll a drop table and return a pickup key or nil
 function roll_drop(drop_table)
   if not drop_table then
     return nil
@@ -83,6 +88,7 @@ function roll_drop(drop_table)
   return nil
 end
 
+-- spawn a pickup at a position
 function spawn_pickup(key, x, y)
   local def = pickup_defs[key]
   if not def then
@@ -92,6 +98,7 @@ function spawn_pickup(key, x, y)
   add(game_state.pickups, p)
 end
 
+-- handle a defeated enemy drop
 function enemy_drop(enemy)
   local key = roll_drop(enemy.drop_table)
   if key then
@@ -99,6 +106,7 @@ function enemy_drop(enemy)
   end
 end
 
+-- update pickup animation, lifetime, and player collection
 function update_pickups()
   for i = #game_state.pickups, 1, -1 do
     local p = game_state.pickups[i]
@@ -134,6 +142,7 @@ function update_pickups()
   end
 end
 
+-- draw pickups
 function draw_pickups()
   for p in all(game_state.pickups) do
     local def = pickup_defs[p.key]
@@ -147,11 +156,13 @@ function draw_pickups()
   end
 end
 
+-- update enemy spawn timing, movement, and collisions
 function update_enemies()
   if game_state.game_over then
     return
   end
 
+  -- spawn timer scales with level
   local lvl = game_state.level or 1
   local min_t = max(10, enemy_spawner.spawn_min - (lvl - 1) * 2)
   local max_t = max(min_t, enemy_spawner.spawn_max - (lvl - 1) * 4)
@@ -163,6 +174,7 @@ function update_enemies()
     game_state.enemy_spawn_t = flr(rnd(max_t - min_t + 1)) + min_t
   end
 
+  -- chase the player center
   local px = game_state.player.position.x + 4
   local py = game_state.player.position.y + 4
 
@@ -170,6 +182,7 @@ function update_enemies()
     local e = game_state.enemies[i]
     local def = enemy_types[e.kind] or enemy_types.basic
     local frames = e.spr
+    -- animate enemy sprite frames
     if type(frames) == "table" then
       local n = #frames
       if n > 0 then
@@ -180,6 +193,7 @@ function update_enemies()
       end
     end
 
+    -- move toward player
     local ex = e.x + 4
     local ey = e.y + 4
     local dx = px - ex
@@ -190,16 +204,11 @@ function update_enemies()
       e.y += (dy / d) * e.spd
     end
 
-    if game_state.player.invuln_t <= 0 and not game_state.player.dead then
-      if aabb(e.x, e.y, e.w, e.h, game_state.player.position.x, game_state.player.position.y, 8, 8) then
-        game_state.player.hp -= (def.dmg or 1)
-        game_state.player.invuln_t = (def.hit_invuln_t or 20)
-        game_state.toast = "ouch! hp: " .. game_state.player.hp
-        game_state.toast_t = 30
+    -- handle collision with player
+    if aabb(e.x, e.y, e.w, e.h, game_state.player.position.x, game_state.player.position.y, 8, 8) then
+      if player_hit(def.dmg or 1, def.hit_invuln_t) then
         deli(game_state.enemies, i)
-
         if game_state.player.hp <= 0 then
-          set_game_over()
           return
         end
       end
@@ -207,6 +216,7 @@ function update_enemies()
   end
 end
 
+-- draw enemies
 function draw_enemies()
   for e in all(game_state.enemies) do
     local frames = e.spr

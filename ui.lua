@@ -4,6 +4,13 @@
 UI_COLOR = 5
 UI_HEIGHT = 16
 
+function ui_print_centered(msg, y, col)
+  col = col or 7
+  local x = flr((128 - (#msg * 4)) / 2)
+  if x < 0 then x = 0 end
+  print(msg, x, y, col)
+end
+
 function draw_score()
   -- Example logic to draw the score
   print("Score: " .. game_state.score, 1, 128 - UI_HEIGHT + 1, 7)
@@ -46,4 +53,21 @@ function update_toast()
       game_state.toast = ""
     end
   end
+end
+
+function ui_draw_main_menu()
+  ui_print_centered("lil pico", 32, 7)
+  ui_print_centered("press X or O to start", 52, 6)
+end
+
+function ui_draw_upgrades()
+  ui_print_centered("upgrades", 24, 7)
+  ui_print_centered("(wip)", 36, 6)
+  ui_print_centered("X/O: resume", 56, 6)
+end
+
+function ui_draw_game_over()
+  ui_print_centered("game over", 32, 7)
+  ui_print_centered("final score: " .. game_state.score, 44, 7)
+  ui_print_centered("hold O+X to restart", 56, 6)
 end
