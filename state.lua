@@ -51,7 +51,7 @@ function init_game_state()
       moving = false,
 
       anim = {
-        [0] = { 2, 2, 2, 1, 2 }, -- left
+        [0] = { 2 }, -- left
         [1] = { 1 }, -- right
         [2] = { 3 }, -- up
         [3] = { 4 } -- down
