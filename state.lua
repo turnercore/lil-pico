@@ -146,8 +146,7 @@ function set_app_state(next_state)
 
     if prev == GS_MENU then
       init_game_state()
-      game_state.toast = ""
-      game_state.toast_t = 0
+      toast_clear()
     elseif prev == GS_GAME_OVER then
       reset_game_state()
     end
@@ -160,8 +159,7 @@ function set_app_state(next_state)
     game_state.enemies = {}
     game_state.projectiles = {}
     game_state.pickups = {}
-    game_state.toast = "game over"
-    game_state.toast_t = 9999
+    toast_show("game over", 9999)
     music(-1)
   end
 end
@@ -248,8 +246,7 @@ end
 
 function reset_game_state()
   init_game_state()
-  game_state.toast = "game restarted"
-  game_state.toast_t = 30
+  toast_show("game restarted", 30)
 end
 
 function set_game_over()
@@ -263,8 +260,7 @@ function set_level(level_num, silent)
   game_state.level = level_num
   game_state.level_score_start = game_state.score or 0
   if not silent then
-    game_state.toast = "level " .. game_state.level
-    game_state.toast_t = 30
+    toast_show("level " .. game_state.level, 30)
   end
 
   local wave_def = wave_defs and wave_defs[level_num]

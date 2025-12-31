@@ -75,24 +75,6 @@ function draw_level_progress()
   end
 end
 
-function draw_toast()
-  if game_state.toast_t > 0 and game_state.toast ~= "" then
-    local x = flr((128 - (#game_state.toast * 4)) / 2)
-    if x < 0 then x = 0 end
-    print(game_state.toast, x, 1, 7)
-  end
-end
-
-function update_toast()
-  if game_state.toast_t > 0 then
-    game_state.toast_t -= 1
-    if game_state.toast_t <= 0 then
-      game_state.toast_t = 0
-      game_state.toast = ""
-    end
-  end
-end
-
 function ui_draw_main_menu()
   ui_print_centered("lil pico", 32, 7)
   ui_print_centered("press X or O to start", 52, 6)
