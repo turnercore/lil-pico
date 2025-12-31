@@ -342,18 +342,15 @@ function update_pickups()
               local score = def.score or 0
               if score > 0 then
                 game_state.score += score
-                game_state.toast = "+" .. score
-                game_state.toast_t = 30
+                toast_show("+" .. score, 30)
               end
             else
               game_state.player.hp = min(hp_max, game_state.player.hp + heal)
-              game_state.toast = "hp +" .. heal
-              game_state.toast_t = 30
+              toast_show("hp +" .. heal, 30)
             end
           elseif def.score and def.score > 0 then
             game_state.score += def.score
-            game_state.toast = "+" .. def.score
-            game_state.toast_t = 30
+            toast_show("+" .. def.score, 30)
           end
           if def.sfx ~= nil then
             sfx(def.sfx)

@@ -6,8 +6,7 @@ function update_player_actions()
 
   if combo and not game_state.shoot_combo_prev then
     game_state.shoot_repeat = not game_state.shoot_repeat
-    game_state.toast = game_state.shoot_repeat and "shoot: repeat" or "shoot: single"
-    game_state.toast_t = 30
+    toast_show(game_state.shoot_repeat and "shoot: repeat" or "shoot: single", 30)
   end
   game_state.shoot_combo_prev = combo
 
@@ -147,8 +146,7 @@ function player_hit(dmg, hit_invuln_t)
   dmg = dmg or 1
   game_state.player.hp -= dmg
   game_state.player.hit_flash = add_hit_flash(8, 5, 8)
-  game_state.toast = "ouch! hp: " .. game_state.player.hp
-  game_state.toast_t = 30
+  toast_show("ouch! hp: " .. game_state.player.hp, 30)
   pause_game(6)
   game_state.player.invuln_t = hit_invuln_t or 20
   sfx(SFX_PLAYER_HIT)
